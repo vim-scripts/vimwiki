@@ -261,7 +261,7 @@ function! s:get_html_toc(toc_list) "{{{
   function! s:close_list(toc, plevel, level) "{{{
     let plevel = a:plevel
     while plevel > a:level
-      call add(a:toc, '</ul>')
+      call add(a:toc, '</ul></li>')
       let plevel -= 1
     endwhile
     return plevel
@@ -272,11 +272,12 @@ function! s:get_html_toc(toc_list) "{{{
   endif
 
   let toc = ['<div class="toc">']
+  call add(toc, '<ul>')
   let level = 0
   let plevel = 0
   for [level, text, id] in a:toc_list
-    if level > plevel
-      call add(toc, '<ul>')
+    if level > 1 && level > plevel
+      call add(toc, '<li><ul>')
     elseif level < plevel
       let plevel = s:close_list(toc, plevel, level)
     endif
@@ -286,7 +287,8 @@ function! s:get_html_toc(toc_list) "{{{
     call add(toc, '<li><a href="#'.id.'">'.toc_text.'</a></li>')
     let plevel = level
   endfor
-  call s:close_list(toc, level, 0)
+  call s:close_list(toc, level, 1)
+  call add(toc, '</ul>')
   call add(toc, '</div>')
   return toc
 endfunction "}}}
