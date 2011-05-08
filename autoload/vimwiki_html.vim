@@ -277,14 +277,16 @@ function! s:get_html_toc(toc_list) "{{{
   let plevel = 0
   for [level, text, id] in a:toc_list
     if level > 1 && level > plevel
-      call add(toc, '<li><ul>')
+      call remove(toc, -1);
+      call add(toc, '<ul>')
     elseif level < plevel
       let plevel = s:close_list(toc, plevel, level)
     endif
 
     let toc_text = s:process_tags_remove_links(text)
     let toc_text = s:process_tags_typefaces(toc_text)
-    call add(toc, '<li><a href="#'.id.'">'.toc_text.'</a></li>')
+    call add(toc, '<li><a href="#'.id.'">'.toc_text.'</a>')
+    call add(toc, '</li>')
     let plevel = level
   endfor
   call s:close_list(toc, level, 1)
