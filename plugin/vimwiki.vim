@@ -269,6 +269,7 @@ else
         \  'opera',
         \  'firefox',
         \  'konqueror',
+        \  'links',
         \ ])
 endif
 
