@@ -441,7 +441,7 @@ function! vimwiki#base#system_open_link(url) "{{{
     execute '!open ' . shellescape(a:url, 1)
   endfunction
   function! s:linux_handler(url)
-    execute 'silent !xdg-open ' . shellescape(a:url, 1)
+    call system('xdg-open ' . shellescape(a:url, 1).' &')
   endfunction
   let success = 0
   try
@@ -549,7 +549,7 @@ endfunction "}}}
 function! vimwiki#base#backlinks() "{{{
     execute 'lvimgrep "\%(^\|[[:blank:][:punct:]]\)'.
           \ expand("%:t:r").
-          \ '\([[:blank:][:punct:]]\|$\)" '.
+          \ '\([[:blank:][:punct:]]\|$\)\C" '.
           \ escape(VimwikiGet('path').'**/*'.VimwikiGet('ext'), ' ')
 endfunction "}}}
 
@@ -639,7 +639,7 @@ function! vimwiki#base#edit_file(command, filename, ...) "{{{
   " then
   " [[test*file]]...
   " you'll have E77: Too many file names
-  let fname = escape(a:filename, '% *|')
+  let fname = escape(a:filename, '% *|#')
   let dir = fnamemodify(a:filename, ":p:h")
   if vimwiki#base#mkdir(dir, 1)
     execute a:command.' '.fname

@@ -9,7 +9,7 @@
               |___|  |___| |_|   |_||__| |__||___| |___| |_||___|            ~
 
 
-                               Version: 2.0.1 'stu'
+                               Version: 2.1
 
 ==============================================================================
 CONTENTS                                                    *vimwiki-contents*
@@ -634,7 +634,7 @@ If the Id is defined elsewhere in the source, as per the Markdown standard: >
   [Id]: URL
 
 then the URL is opened with the system default handler.  Otherwise, Vimwiki
-treats the reference-sytle link as a Wikilink, interpreting the Id field as a
+treats the reference-style link as a Wikilink, interpreting the Id field as a
 wiki page name.
 
 Highlighting of existing links when |vimwiki-option-maxhi| is activated
@@ -1042,9 +1042,10 @@ in HTML: >
 ==============================================================================
 6. Folding/Outline                                           *vimwiki-folding*
 
-Vimwiki can fold or outline headers and list items.
+Vimwiki can fold or outline sections using headers and preformatted blocks.
+Alternatively, one can fold list subitems instead.
 
-Example:
+Example for list folding:
 = My current task =
   * [ ] Do stuff 1
     * [ ] Do substuff 1.1
@@ -1641,13 +1642,24 @@ The following arguments, in this order, are passed to the
 4. output_dir : the full path of the output directory, i.e. 'path_html'
 5. input_file : the full path of the wiki page
 6. css_file : the full path of the css file for this wiki
+7. template_path : the full path to the wiki's templates
+8. template_default : the default template name
+9. template_ext : the extension of template files
+10. root_path : a count of ../ for pages buried in subdirs
+    if you have wikilink [[dir1/dir2/dir3/my page in a subdir]] then
+    %root_path% is replaced by '../../../'.
+
+Options 7-10 are experimental and may change in the future.  If any of these
+parameters is empty, then a hyphen "-" is passed to the script in its place.
 
 For an example and further instructions, refer to the following script:
 
   $VIMHOME/autoload/vimwiki/customwiki2html.sh
 
-To use the internal wiki2html converter, use an empty string (the default).
+An alternative converter was developed by Jason6Anderson, and can
+be located at http://code.google.com/p/vimwiki/issues/detail?id=384
 
+To use the internal wiki2html converter, use an empty string (the default).
 
 *vimwiki-option-list_margin*
 ------------------------------------------------------------------------------
@@ -1736,7 +1748,7 @@ An extension that is registered with vimwiki can trigger creation of a
 |g:vimwiki_list| are automatically registered with vimwiki using the default
 syntax.
 
-Default: {'.md': 'markdown'}
+Default: {}
 
 ------------------------------------------------------------------------------
 *g:vimwiki_auto_checkbox*
@@ -1796,26 +1808,22 @@ Default: 0
 ------------------------------------------------------------------------------
 *g:vimwiki_folding*
 
-Enable/disable vimwiki's folding/outline functionality. Folding in vimwiki
-uses the 'expr' foldmethod which is very flexible but really slow.
+Enable/disable vimwiki's folding (outline) functionality. Folding in vimwiki
+can uses either the 'expr' or the 'syntax' |foldmethod| of Vim.
 
 Value           Description~
-0               Disable folding.
-1               Enable folding.
+''              Disable folding.
+'expr'          Folding based on expression (folds sections and code blocks).
+'syntax'        Folding based on syntax (folds sections; slower than 'expr').
+'list'          Folding based on expression (folds list subitems; much slower).
 
-Default: 0
+Default: ''
 
-
-------------------------------------------------------------------------------
-*g:vimwiki_fold_lists*
-
-Enable/disable folding of list subitems.
-
-Value           Description~
-0               Disable list subitem's folding.
-1               Enable list subitem's folding.
-
-Default: 0
+Limitations:
+  - Opening very large files may be slow when folding is enabled.
+  - 'list' folding is particularly slow with larger files.
+  - 'list' is intended to work with lists nicely indented with 'shiftwidth'.
+  - 'syntax' is only available for the default syntax so far.
 
 
 ------------------------------------------------------------------------------
@@ -2068,7 +2076,7 @@ Default: '' (empty)
 ------------------------------------------------------------------------------
 *g:vimwiki_valid_html_tags*
 
-Comma-separated list of HTML tags that can be used in vimwiki.
+Case-insensitive comma separated list of HTML tags that can be used in vimwiki.
 
 Default: 'b,i,s,u,sub,sup,kbd,br,hr'
 
@@ -2097,30 +2105,46 @@ a new tab or window, it would be set to default value.
 Vimwiki sets |conceallevel| to g:vimwiki_conceallevel everytime vimwiki buffer
 is entered.
 
+With default settings, Vimwiki conceals one-character markers, shortens long
+URLs and hides markers and URL for links that have a description.
+
 Default: 2
 
 
 ------------------------------------------------------------------------------
-*g:vimwiki_url_mingain*
+*g:vimwiki_autowriteall*
 
-The minimum number of characters that should be gained by concealing URLs. If
-the length of the concealed part of the URL would be less than
-|g:vimwiki_url_mingain|, the URL is not concealed at all.
-The conceal feature works only with vim >= 7.3.
+In vim |autowriteall| is a global setting. With g:vimwiki_autowriteall vimwiki
+makes it local to its buffers.
 
-Default: 12
+Value           Description~
+0               autowriteall is off
+1               autowriteall is on
+
+Default: 1
 
 
 ------------------------------------------------------------------------------
 *g:vimwiki_url_maxsave*
 
-The maximum number of characters that is retained at the end after concealing
-URLs. At most there will be |g:vimwiki_url_maxsave| characters left at the end of the URL.
-However, it could be less when one of /,#,? can be found at the end.
-In that case the URL will be concealed right before the last occurrence of one
-of these characters.
-The conceal feature works only with vim >= 7.3. Beware: when using the default
-'wrap' option, the effect is not always pleasing.
+Setting the value of |g:vimwiki_url_maxsave| to 0 will prevent any link
+shortening: you will see the full URL in all types of links, with no parts
+being concealed. Concealing of one-character markers is not affected.
+
+When positive, the value determines the maximum number of characters that
+are retained at the end after concealing the middle part of a long URL.
+It could be less: in case one of the characters /,#,? is found near the end,
+the URL will be concealed up to the last occurrence of that character.
+
+Note:
+  * The conceal feature works only with Vim >= 7.3.
+  * When using the default |wrap| option of Vim, the effect of concealed links
+    is not always pleasing, because the visible text on longer lines with
+    a lot of concealed parts may appear to be strangely broken across several
+    lines. This is a limitation of Vim's |conceal| feature.
+  * Many color schemes do not define an unobtrusive color for the Conceal
+    highlight group - this might be quite noticeable on shortened URLs.
+
 
 Default: 15
 
@@ -2136,6 +2160,7 @@ Value           Description~
 1               Show debug messages.
 
 Default: 0
+
 
 ------------------------------------------------------------------------------
 *g:vimwiki_diary_months*
@@ -2186,6 +2211,22 @@ Vim plugins: http://www.vim.org/scripts/script.php?script_id=2226
 ==============================================================================
 14. Changelog                                              *vimwiki-changelog*
 
+2.1~
+
+    * Concealing of links can be turned off - set |g:vimwiki_url_maxsave| to 0.
+      The option g:vimwiki_url_mingain was removed
+    * |g:vimwiki_folding| also accepts value 'list'; with 'expr' both sections
+      and code blocks folded, g:vimwiki_fold_lists option was removed
+    * Issue 261: Syntax folding is back. |g:vimwiki_folding| values are
+      changed to '', 'expr', 'syntax'.
+    * Issue 372: Ignore case in g:vimwiki_valid_html_tags
+    * Issue 374: Make autowriteall local to vimwiki. It is not 100% local
+      though.
+    * Issue 384: Custom_wiki2html script now receives templating arguments
+    * Issue 393: Custom_wiki2html script path can contain tilde character
+    * Issue 392: Custom_wiki2html arguments are quoted, e.g names with spaces
+    * Various small bug fixes.
+
 2.0.1 'stu'~
 
     * Follow (i.e. open target of) markdown reference-style links.
@@ -2195,7 +2236,7 @@ Vim plugins: http://www.vim.org/scripts/script.php?script_id=2226
 2.0 'stu'~
 
 This release is partly incompatible with previous.
-    *
+
 Summary ~
 
     * Quick page-link creation.
@@ -2221,7 +2262,7 @@ Summary ~
     * Table syntax change. Row separator uses | instead of +.
     * Fold multilined list items.
     * Custom wiki to HTML converters. See |vimwiki-option-custom_wiki2html|.
-    * Conceal long weblinks. See |g:vimwiki_url_mingain|.
+    * Conceal long weblinks. See g:vimwiki_url_mingain.
     * Option to disable table mappings. See |g:vimwiki_table_mappings|.
 
 For detailed information see issues list on
